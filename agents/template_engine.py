@@ -16,9 +16,10 @@ class TemplateEngineAgent:
             "price_inr": product_model.get("price_inr"),
             "hero_blurb": blocks.get("benefits_block",{}).get("summary","")
         }
+        faq_block = blocks.get("faq_answer_block", {}).get("faq_items", [])
         faq = {
             "product_id": product_model.get("id"),
-            "faqs": questions.get("questions", [])[:5]
+            "items": faq_block[:5]  # requirement: minimum 5 Q&A
         }
         comparison = {
             "product_a": product_model,

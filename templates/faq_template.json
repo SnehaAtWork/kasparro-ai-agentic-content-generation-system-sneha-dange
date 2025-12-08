@@ -1,7 +1,8 @@
 {
-  "name":"faq_template",
+  "name": "faq_template",
   "fields": {
-    "product_id": {"type":"string"},
-    "faqs": {"type":"list"}
-  }
+    "product_id": { "type": "string" },
+    "items": { "type": "list" }
+  },
+  "required": ["product_id", "items"]
 }

@@ -23,7 +23,7 @@ class OrchestratorAgent:
         questions = qgen.run(product_model)
 
         logic = LogicBlockEngineAgent()
-        blocks = logic.run(product_model).get("blocks", {})
+        blocks = logic.run(product_model, questions).get("blocks", {})
 
         templater = TemplateEngineAgent()
         pages = templater.run(product_model, blocks, questions)
