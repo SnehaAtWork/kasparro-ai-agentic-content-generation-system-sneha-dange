@@ -1,0 +1,7 @@
+{
+  "name":"faq_template",
+  "fields": {
+    "product_id": {"type":"string"},
+    "faqs": {"type":"list"}
+  }
+}

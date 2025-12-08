@@ -1,0 +1,8 @@
+{
+  "name":"comparison_template",
+  "fields": {
+    "product_a": {"type":"object"},
+    "product_b": {"type":"object"},
+    "comparison": {"type":"object"}
+  }
+}

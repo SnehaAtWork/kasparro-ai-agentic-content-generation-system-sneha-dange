@@ -1,0 +1,9 @@
+{
+  "name":"product_template",
+  "fields": {
+    "id": {"type":"string"},
+    "title": {"type":"string"},
+    "hero_blurb": {"type":"string"},
+    "price_inr": {"type":"number"}
+  }
+}
