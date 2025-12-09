@@ -1,8 +1,15 @@
 {
-  "name":"comparison_template",
+  "name": "comparison_template",
   "fields": {
-    "product_a": {"type":"object"},
-    "product_b": {"type":"object"},
-    "comparison": {"type":"object"}
-  }
+    "product_a": {"type":"object","source":"product"},
+    "product_b": {"type":"object","source":"blocks.compare_block.product_b"},
+    "shared_ingredients": {"type":"list","source":"blocks.compare_block.shared_ingredients"},
+    "unique_to_a": {"type":"list","source":"blocks.compare_block.unique_to_a"},
+    "unique_to_b": {"type":"list","source":"blocks.compare_block.unique_to_b"},
+    "shared_benefits": {"type":"list","source":"blocks.compare_block.shared_benefits"},
+    "price_difference": {"type":"object","source":"blocks.compare_block.price_difference"},
+    "score": {"type":"object","source":"blocks.compare_block.score"},
+    "summary": {"type":"string","source":"blocks.compare_block.summary"}
+  },
+  "required": ["product_a","product_b","summary"]
 }

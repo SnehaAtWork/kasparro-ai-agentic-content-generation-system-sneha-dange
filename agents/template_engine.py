@@ -159,14 +159,21 @@ class TemplateEngineAgent:
 
         # FAQ + comparison as before
         faq_block = blocks.get("faq_answer_block", {}).get("faq_items", [])
-        result["faq"] = {"product_id": product_model.get("id"), "items": faq_block[:5]}
+        result["faq"] = {"product_id": product_model.get("id"), "items": faq_block}
 
+        # Comparison assembly (avoid duplicating product_b inside nested comparison)
+        compare_block = blocks.get("compare_block", {}) or {}
+        # product_b (full dict) if present
+        comp_product_b = compare_block.get("product_b")
+        # comparison payload: everything from compare_block except product_b (avoid duplication)
+        comparison_payload = {k: v for k, v in compare_block.items() if k != "product_b"}
         comparison = {
             "product_a": product_model,
-            "product_b": (blocks.get("compare_block") or {}).get("product_b", {"id": "product_b_001", "name": "Product B"}),
-            "comparison": blocks.get("compare_block", {})
+            "product_b": comp_product_b,
+            "comparison": comparison_payload
         }
         result["comparison"] = comparison
+
 
         # --- Provenance injection (clean, minimal, consistent) ---
         timestamp = datetime.utcnow().isoformat() + "Z"
