@@ -10,6 +10,7 @@ from typing import Dict, Optional, Callable, List
 import importlib
 
 REGISTERED_BLOCKS = [
+    "product_block"
     "benefits_block",
     "usage_block",
     "safety_block",

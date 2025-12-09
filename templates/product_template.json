@@ -1,9 +1,19 @@
 {
-  "name":"product_template",
+  "name": "product_template",
   "fields": {
-    "id": {"type":"string"},
-    "title": {"type":"string"},
-    "hero_blurb": {"type":"string"},
-    "price_inr": {"type":"number"}
-  }
+    "id": {"type":"string","source":"product.id"},
+    "title": {"type":"string","source":"product.name"},
+    "hero_blurb": {"type":"string","source":"blocks.product_block.hero_blurb","max_len":160},
+    "price_inr": {"type":"number","source":"product.price_inr"},
+    "price_statement": {"type":"string","source":"blocks.product_block.price_statement"},
+    "highlights": {"type":"list","source":"blocks.product_block.highlights"},
+    "ingredients": {"type":"list","source":"blocks.ingredients_block.ingredients"},
+    "ingredients_count": {"type":"number","source":"blocks.ingredients_block.count"},
+    "benefits": {"type":"list","source":"blocks.benefits_block.items"},
+    "usage": {"type":"string","source":"blocks.usage_block.text"},
+    "usage_steps": {"type":"list","source":"blocks.usage_block.steps"},
+    "safety": {"type":"string","source":"blocks.safety_block.text"},
+    "metadata": {"type":"object","source":"product.metadata"}
+  },
+  "required": ["id", "title", "hero_blurb", "price_inr"]
 }

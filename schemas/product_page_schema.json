@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Product Page Schema",
+  "type": "object",
+  "required": ["id", "title", "hero_blurb", "price_inr"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "hero_blurb": { "type": "string", "maxLength": 300 },
+    "price_inr": { "type": ["number","integer","null"] },
+    "price_statement": { "type": ["string","null"] },
+    "highlights": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ingredients": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ingredients_count": { "type": "integer" },
+    "benefits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title","explanation"],
+        "properties": {
+          "title": { "type": "string" },
+          "explanation": { "type": "string" }
+        }
+      }
+    },
+    "usage": { "type": ["string","null"] },
+    "usage_steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "safety": { "type": ["string","null"] },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "concentration": { "type": ["string","null"] },
+        "skin_type": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "last_updated": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "images": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}
