@@ -1071,9 +1071,9 @@ Below is a Mermaid flowchart representing the complete execution flow of the Mul
 flowchart TD
   %% Orchestrator & input
   A[Start: inputs/product_input.json] --> Orchestrator[OrchestratorAgent]
-  Orchestrator --> DP[DataParserAgent\n(parse -> product_model)]
-  DP --> QG[QuestionGeneratorAgent\n(generate -> questions)]
-  QG --> LBE[LogicBlockEngineAgent\n(run blocks)]
+  Orchestrator --> DP[DataParserAgent - (parse -> product_model)]
+  DP --> QG[QuestionGeneratorAgent - (generate -> questions)]
+  QG --> LBE[LogicBlockEngineAgent - (run blocks)]
 
   %% Logic blocks as subgraph
   subgraph LOGIC_BLOCKS [Logic Blocks (deterministic, pure)]
@@ -1084,7 +1084,7 @@ flowchart TD
     IB[ingredients_block]
     SB[safety_block]
     PurchB[purchase_block]
-    CB[compare_block\n(generate Product B, scoring)]
+    CB[compare_block - (generate Product B, scoring)]
   end
 
   LBE --> PB
@@ -1103,16 +1103,16 @@ flowchart TD
   CB --> LBE
 
   %% Templating and FAQ path
-  LBE --> TE[TemplateEngineAgent\n(render templates)]
+  LBE --> TE[TemplateEngineAgent - (render templates)]
   TE --> ProdPage[product_page.json]
   TE --> CompPage[comparison_page.json]
   TE --> FAQDraft[faq (draft answers)]
 
   %% Optional LLM paraphrasing & validation
-  FAQDraft --> LLM[Optional LLM Adapter\n(paraphrase_faq_items)]
+  FAQDraft --> LLM[Optional LLM Adapter - (paraphrase_faq_items)]
   LLM --> V{Validate paraphrase}
   V -- Pass --> FAQFinal[Accept paraphrases]
-  V -- Fail --> Fallback[Deterministic fallback\n(use original drafts)]
+  V -- Fail --> Fallback[Deterministic fallback - (use original drafts)]
   Fallback --> FAQFinal
   FAQFinal --> FAQOut[outputs/faq.json]
 
