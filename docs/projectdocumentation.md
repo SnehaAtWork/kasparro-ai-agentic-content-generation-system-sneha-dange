@@ -147,10 +147,6 @@ This section defines what the system does and does not do. It establishes bounda
 
 This document describes the system-level design for the Multi-Agent Content Generation System developed for the Kasparro Applied AI Engineer Challenge. It covers architecture, agent responsibilities, data flow (DAG), logic block design, template schema, validation rules (especially for LLM integration), testing strategy, deployment considerations, and extension points. Diagrams and sequence charts are included to make the design actionable and review-ready.
 
-# System Design Document (Sections 1–5)
-
-This document provides the first five sections of the full system design for the Multi-Agent Content Generation System developed for the Kasparro Applied AI Engineer Challenge.
-
 ---
 
 # **1. Goals and Design Constraints**
