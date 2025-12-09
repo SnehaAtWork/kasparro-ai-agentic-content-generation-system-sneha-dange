@@ -1,0 +1,175 @@
+{
+  "product_a": {
+    "id": "product_001",
+    "name": "GlowBoost Vitamin C Serum",
+    "concentration": "10% Vitamin C",
+    "skin_type": [
+      "Oily",
+      "Combination"
+    ],
+    "ingredients": [
+      "Vitamin C",
+      "Hyaluronic Acid"
+    ],
+    "benefits": [
+      "Brightening",
+      "Fades dark spots"
+    ],
+    "usage": "Apply 2–3 drops in the morning before sunscreen",
+    "side_effects": "Mild tingling for sensitive skin",
+    "price_inr": 699,
+    "raw": {
+      "product_name": "GlowBoost Vitamin C Serum",
+      "concentration": "10% Vitamin C",
+      "skin_type": "Oily, Combination",
+      "key_ingredients": "Vitamin C, Hyaluronic Acid",
+      "benefits": "Brightening, Fades dark spots",
+      "how_to_use": "Apply 2–3 drops in the morning before sunscreen",
+      "side_effects": "Mild tingling for sensitive skin",
+      "price": "₹699"
+    }
+  },
+  "product_b": {
+    "id": "product_001_variant_03",
+    "name": "GlowBoost Vitamin C Serum — Variant 03",
+    "ingredients": [
+      "Vitamin C",
+      "Glycerin",
+      "Niacinamide"
+    ],
+    "benefits": [
+      "Brightening",
+      "Hydration",
+      "Barrier Repair"
+    ],
+    "concentration": "5% Vitamin C",
+    "skin_type": [
+      "Normal",
+      "Dry"
+    ],
+    "usage": "Apply 2–3 drops in the morning before sunscreen",
+    "side_effects": "Mild tingling for sensitive skin",
+    "price_inr": 874,
+    "metadata": {
+      "generated": true,
+      "variant_reason": "swap_idx=0,ben_idx=3,conc_idx=0,skin_idx=1,price_idx=2"
+    }
+  },
+  "comparison": {
+    "shared_ingredients": [
+      "Vitamin C"
+    ],
+    "unique_to_a": [
+      "Hyaluronic Acid"
+    ],
+    "unique_to_b": [
+      "Glycerin",
+      "Niacinamide"
+    ],
+    "shared_benefits": [
+      "Brightening"
+    ],
+    "unique_benefits_a": [
+      "Fades Dark Spots"
+    ],
+    "unique_benefits_b": [
+      "Barrier Repair",
+      "Hydration"
+    ],
+    "price_a": 699.0,
+    "price_b": 874.0,
+    "price_difference": {
+      "absolute": 175.0,
+      "percent": 25.04
+    },
+    "score": {
+      "ingredient_overlap": 0.25,
+      "benefit_overlap": 0.25,
+      "overall": 0.25
+    },
+    "summary": "Comparing GlowBoost Vitamin C Serum and GlowBoost Vitamin C Serum — Variant 03. Both share ingredients: Vitamin C. Unique to A: Hyaluronic Acid. Unique to B: Glycerin, Niacinamide. Price difference (B - A): ₹175.0 (25.04%).",
+    "value_indicator": 0.2,
+    "value_label": "Product B may offer better value",
+    "generated_note": "Product B was created deterministically for comparison (not a real SKU).",
+    "recommendation": {
+      "decision": "Contextual",
+      "default": "Consider Product B",
+      "default_reasons": [
+        "Product B offers distinct benefits not present in Product A."
+      ],
+      "rules": [
+        {
+          "if": "you want Barrier Repair",
+          "choose": "Product B",
+          "reason": "Product B lists Barrier Repair while Product A does not."
+        },
+        {
+          "if": "you want Hydration",
+          "choose": "Product B",
+          "reason": "Product B lists Hydration while Product A does not."
+        },
+        {
+          "if": "you want Fades Dark Spots",
+          "choose": "Product A",
+          "reason": "Product A lists Fades Dark Spots while Product B does not."
+        },
+        {
+          "if": "your skin is Dry",
+          "choose": "Product B",
+          "reason": "Product B lists Dry as suitable; Product A does not explicitly list this skin type."
+        },
+        {
+          "if": "your skin is Normal",
+          "choose": "Product B",
+          "reason": "Product B lists Normal as suitable; Product A does not explicitly list this skin type."
+        },
+        {
+          "if": "your skin is Combination",
+          "choose": "Product A",
+          "reason": "Product A lists Combination as suitable; Product B does not explicitly list this skin type."
+        },
+        {
+          "if": "your skin is Oily",
+          "choose": "Product A",
+          "reason": "Product A lists Oily as suitable; Product B does not explicitly list this skin type."
+        }
+      ],
+      "decision_rationale": [
+        "Products differ (overall=0.25). Follow contextual rules above."
+      ]
+    },
+    "pros": {
+      "product_a": [
+        "Lower price (₹699)",
+        "Provides Vitamin C",
+        "Unique ingredient: Hyaluronic Acid",
+        "Provides Brightening",
+        "Offers Fades Dark Spots"
+      ],
+      "product_b": [
+        "Provides Vitamin C",
+        "Unique ingredient: Glycerin",
+        "Unique ingredient: Niacinamide",
+        "Provides Brightening",
+        "Offers Barrier Repair",
+        "Offers Hydration"
+      ]
+    },
+    "cons": {
+      "product_a": [
+        "Missing Glycerin",
+        "Missing Niacinamide"
+      ],
+      "product_b": [
+        "Higher price (₹874)",
+        "Missing Hyaluronic Acid"
+      ]
+    },
+    "score_explanation": "Scores range 0–1; higher = more similarity.",
+    "decision_rationale": [
+      "Products differ (overall=0.25). Follow contextual rules above."
+    ]
+  },
+  "last_updated": "2025-12-09T05:45:55.927572Z",
+  "source": "comparison_block"
+}

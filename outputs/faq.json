@@ -1,0 +1,92 @@
+{
+  "product_id": "product_001",
+  "items": [
+    {
+      "question": "What is GlowBoost Vitamin C Serum and who is it for?",
+      "category": "Informational",
+      "answer": "GlowBoost Vitamin C Serum. Benefits: Brightening, Fades dark spots Listed for: Oily, Combination Concentration: 10% Vitamin C."
+    },
+    {
+      "question": "What does the concentration 10% Vitamin C mean?",
+      "category": "Informational",
+      "answer": "The listed concentration is 10% Vitamin C (as provided in the product data)."
+    },
+    {
+      "question": "How do I use GlowBoost Vitamin C Serum (steps and frequency)?",
+      "category": "Usage",
+      "answer": "You can use GlowBoost Vitamin C Serum as follows: Apply 2–3 drops in the morning before sunscreen"
+    },
+    {
+      "question": "Can I use GlowBoost Vitamin C Serum with other skincare products like retinol or acids?",
+      "category": "Usage",
+      "answer": "No explicit compatibility information with other actives is provided in the product data. Refer to product guidance or the product label for compatibility recommendations."
+    },
+    {
+      "question": "Are there any side effects when using GlowBoost Vitamin C Serum?",
+      "category": "Safety",
+      "answer": "Reported side effects: Mild tingling for sensitive skin"
+    },
+    {
+      "question": "Can people with sensitive skin use GlowBoost Vitamin C Serum?",
+      "category": "Safety",
+      "answer": "Reported side effects: Mild tingling for sensitive skin"
+    },
+    {
+      "question": "What is the price of GlowBoost Vitamin C Serum and is it value for money?",
+      "category": "Purchase",
+      "answer": "GlowBoost Vitamin C Serum. Benefits: Brightening, Fades dark spots Listed for: Oily, Combination Concentration: 10% Vitamin C."
+    },
+    {
+      "question": "Where can I buy GlowBoost Vitamin C Serum and are there discounts available?",
+      "category": "Purchase",
+      "answer": "The listed price is ₹699."
+    },
+    {
+      "question": "How does GlowBoost Vitamin C Serum compare to other Vitamin C serums?",
+      "category": "Comparison",
+      "answer": "This relates to GlowBoost Vitamin C Serum; benefits: Brightening, Fades dark spots; ingredients: Vitamin C, Hyaluronic Acid; concentration: 10% Vitamin C."
+    },
+    {
+      "question": "What are the advantages of GlowBoost Vitamin C Serum over similar products?",
+      "category": "Comparison",
+      "answer": "This relates to GlowBoost Vitamin C Serum; benefits: Brightening, Fades dark spots; ingredients: Vitamin C, Hyaluronic Acid; concentration: 10% Vitamin C."
+    },
+    {
+      "question": "What are the key ingredients in GlowBoost Vitamin C Serum and their roles?",
+      "category": "Ingredients",
+      "answer": "This relates to GlowBoost Vitamin C Serum; benefits: Brightening, Fades dark spots; ingredients: Vitamin C, Hyaluronic Acid; concentration: 10% Vitamin C."
+    },
+    {
+      "question": "Is Hyaluronic Acid in GlowBoost Vitamin C Serum safe to use with Vitamin C?",
+      "category": "Ingredients",
+      "answer": "This relates to GlowBoost Vitamin C Serum; benefits: Brightening, Fades dark spots; ingredients: Vitamin C, Hyaluronic Acid; concentration: 10% Vitamin C."
+    },
+    {
+      "question": "How should I store GlowBoost Vitamin C Serum to preserve potency?",
+      "category": "Storage",
+      "answer": "No storage or shelf-life information is provided in the product data."
+    },
+    {
+      "question": "What is the typical shelf life of GlowBoost Vitamin C Serum after opening?",
+      "category": "Storage",
+      "answer": "GlowBoost Vitamin C Serum. Benefits: Brightening, Fades dark spots Listed for: Oily, Combination Concentration: 10% Vitamin C."
+    },
+    {
+      "question": "Is GlowBoost Vitamin C Serum suitable for oily and combination skin?",
+      "category": "Suitability",
+      "answer": "Listed skin types: Oily, Combination."
+    },
+    {
+      "question": "How long before I see results with regular use of GlowBoost Vitamin C Serum?",
+      "category": "Effectiveness",
+      "answer": "The product lists benefits such as: Brightening, Fades dark spots. Results are dependent on consistent use."
+    },
+    {
+      "question": "Should I do a patch test before using GlowBoost Vitamin C Serum?",
+      "category": "Safety",
+      "answer": "This relates to GlowBoost Vitamin C Serum; benefits: Brightening, Fades dark spots; ingredients: Vitamin C, Hyaluronic Acid; concentration: 10% Vitamin C."
+    }
+  ],
+  "last_updated": "2025-12-09T05:45:55.927572Z",
+  "source": "generated_faq"
+}
