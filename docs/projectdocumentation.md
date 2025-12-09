@@ -147,10 +147,6 @@ This section defines what the system does and does not do. It establishes bounda
 
 This document describes the system-level design for the Multi-Agent Content Generation System developed for the Kasparro Applied AI Engineer Challenge. It covers architecture, agent responsibilities, data flow (DAG), logic block design, template schema, validation rules (especially for LLM integration), testing strategy, deployment considerations, and extension points. Diagrams and sequence charts are included to make the design actionable and review-ready.
 
-# System Design Document (Sections 1–5)
-
-This document provides the first five sections of the full system design for the Multi-Agent Content Generation System developed for the Kasparro Applied AI Engineer Challenge.
-
 ---
 
 # **1. Goals and Design Constraints**
@@ -1073,62 +1069,59 @@ Below is a Mermaid flowchart representing the complete execution flow of the Mul
 
 ```mermaid
 flowchart TD
-  %% Orchestrator & input
-  A[Start: inputs/product_input.json] --> Orchestrator[OrchestratorAgent]
-  Orchestrator --> DP[DataParserAgent\n(parse -> product_model)]
-  DP --> QG[QuestionGeneratorAgent\n(generate -> questions)]
-  QG --> LBE[LogicBlockEngineAgent\n(run blocks)]
 
-  %% Logic blocks as subgraph
-  subgraph LOGIC_BLOCKS [Logic Blocks (deterministic, pure)]
-    direction TB
-    PB[product_block]
-    BB[benefits_block]
-    UB[usage_block]
-    IB[ingredients_block]
-    SB[safety_block]
-    PurchB[purchase_block]
-    CB[compare_block\n(generate Product B, scoring)]
-  end
+    A[Start: inputs/product_input.json] --> ORCH[OrchestratorAgent]
 
-  LBE --> PB
-  LBE --> BB
-  LBE --> UB
-  LBE --> IB
-  LBE --> SB
-  LBE --> PurchB
-  LBE --> CB
-  PB --> LBE
-  BB --> LBE
-  UB --> LBE
-  IB --> LBE
-  SB --> LBE
-  PurchB --> LBE
-  CB --> LBE
+    ORCH --> DP[DataParserAgent]
+    DP --> QG[QuestionGeneratorAgent]
+    QG --> LBE[LogicBlockEngineAgent]
 
-  %% Templating and FAQ path
-  LBE --> TE[TemplateEngineAgent\n(render templates)]
-  TE --> ProdPage[product_page.json]
-  TE --> CompPage[comparison_page.json]
-  TE --> FAQDraft[faq (draft answers)]
+    subgraph LOGIC_BLOCKS [Logic Blocks]
+        PB[product_block]
+        BB[benefits_block]
+        UB[usage_block]
+        IB[ingredients_block]
+        SB[safety_block]
+        PB2[purchase_block]
+        CB[compare_block]
+    end
 
-  %% Optional LLM paraphrasing & validation
-  FAQDraft --> LLM[Optional LLM Adapter\n(paraphrase_faq_items)]
-  LLM --> V{Validate paraphrase}
-  V -- Pass --> FAQFinal[Accept paraphrases]
-  V -- Fail --> Fallback[Deterministic fallback\n(use original drafts)]
-  Fallback --> FAQFinal
-  FAQFinal --> FAQOut[outputs/faq.json]
+    LBE --> PB
+    LBE --> BB
+    LBE --> UB
+    LBE --> IB
+    LBE --> SB
+    LBE --> PB2
+    LBE --> CB
 
-  %% Final write step (atomic)
-  ProdPage --> Write[Write outputs to outputs/ (UTF-8, ensure_ascii=False)]
-  CompPage --> Write
-  FAQOut --> Write
-  Write --> End[End]
+    PB --> LBE
+    BB --> LBE
+    UB --> LBE
+    IB --> LBE
+    SB --> LBE
+    PB2 --> LBE
+    CB --> LBE
 
-  %% Notes
-  classDef optional fill:#f9f,stroke:#333,stroke-width:1px;
-  class LLM optional;
+    LBE --> TE[TemplateEngineAgent]
+
+    TE --> PAGE1[product_page.json]
+    TE --> PAGE2[comparison_page.json]
+    TE --> FAQDRAFT[faq draft answers]
+
+    FAQDRAFT --> LLM[LLM Adapter]
+    LLM --> VAL{Validate paraphrase}
+
+    VAL -->|valid| FAQFINAL[final faq items]
+    VAL -->|invalid| FAQORIG[use original draft answers]
+
+    FAQFINAL --> FAQOUT[faq.json]
+    FAQORIG --> FAQOUT
+
+    PAGE1 --> WRITE[Write to outputs directory]
+    PAGE2 --> WRITE
+    FAQOUT --> WRITE
+
+    WRITE --> END[End]
 ```
 
 
