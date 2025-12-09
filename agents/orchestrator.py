@@ -2,8 +2,10 @@
 OrchestratorAgent stub - simple synchronous DAG runner for the assignment.
 """
 import json
+import os
 from pathlib import Path
 
+from agents.llm_adapter import paraphrase_faq_items, OPENAI_AVAILABLE
 from .data_parser import DataParserAgent
 from .question_generator import QuestionGeneratorAgent
 from .logic_engine import LogicBlockEngineAgent
@@ -22,7 +24,35 @@ class OrchestratorAgent:
         qgen = QuestionGeneratorAgent()
         questions = qgen.run(product_model)
 
-        logic = LogicBlockEngineAgent()
+        llm_adapter = None
+        # prefer Ollama if configured or running locally
+        use_ollama = os.getenv("USE_OLLAMA", "1")  # default to 1 if you intend to use local Ollama
+        if use_ollama and os.getenv("OLLAMA_BASE", None) is None:
+            # keep default base but ensure server is reachable
+            os.environ.setdefault("OLLAMA_BASE", "http://localhost:11434")
+
+        if os.getenv("OLLAMA_BASE"):
+            try:
+                from agents.ollama_adapter import paraphrase_faq_items as ollama_paraphrase
+                # Quick health check (optional): try a small GET; if fails, adapter will still attempt calls and fallback
+                llm_adapter = ollama_paraphrase
+                print("[orchestrator] Using Ollama adapter for FAQ paraphrasing.")
+            except Exception as e:
+                print("[orchestrator] Ollama adapter import failed:", e)
+                llm_adapter = None
+
+        # If Ollama not present, you can still fall back to OpenAI adapter if desired (previous logic)
+        if not llm_adapter:
+            # existing OpenAI adapter wiring (if you kept agents/llm_adapter.py)
+            try:
+                from agents.llm_adapter import paraphrase_faq_items as openai_paraphrase
+                if os.getenv("OPENAI_API_KEY"):
+                    llm_adapter = openai_paraphrase
+                    print("[orchestrator] Using OpenAI adapter for FAQ paraphrasing.")
+            except Exception:
+                llm_adapter = None
+
+        logic = LogicBlockEngineAgent(llm_adapter=llm_adapter)
         blocks = logic.run(product_model, questions).get("blocks", {})
 
         templater = TemplateEngineAgent()

@@ -1,78 +1,100 @@
 # logic_blocks/faq_answer_block.py
-"""
-FAQ Answer Block
-Generates deterministic answers for each question based ONLY on product attributes.
-No external facts or domain knowledge allowed (per assignment rules).
-"""
+# (use the improved derive_answer from earlier, but include category in outputs)
 
 from typing import Dict, List
+import re
+
+def _safe_join(items):
+    return ", ".join(items) if items else ""
+
+def _has_word(q: str, word: str):
+    return re.search(rf"\b{re.escape(word)}\b", q, flags=re.I) is not None
 
 def derive_answer(question: str, product: Dict) -> str:
-    """
-    Strict, rules-based, no external domain knowledge.
-    Answers use only product attributes.
-    """
-
+    q = (question or "").strip()
     name = product.get("name", "the product")
-    usage = product.get("usage", "")
-    benefits = ", ".join(product.get("benefits", [])) or "its listed benefits"
-    ingredients = ", ".join(product.get("ingredients", [])) or "the listed ingredients"
-    side_effects = product.get("side_effects", "No specific side effects listed.")
+    usage = product.get("usage") or product.get("how_to_use") or ""
+    benefits = _safe_join(product.get("benefits", []))
+    ingredients = _safe_join(product.get("ingredients", []))
+    side_effects = product.get("side_effects") or ""
+    skin_types = _safe_join(product.get("skin_type", []))
     price = product.get("price_inr")
+    concentration = product.get("concentration") or ""
 
-    # Rule templates (deterministic)
-    if "use" in question.lower():
-        return f"You can use {name} as described: {usage}."
+    # (same rules as we used earlier — kept concise here)
+    if _has_word(q, "what is") or _has_word(q, "who is it for"):
+        parts = []
+        if benefits:
+            parts.append(f"Benefits: {benefits}")
+        if skin_types:
+            parts.append(f"Listed for: {skin_types}")
+        if concentration:
+            parts.append(f"Concentration: {concentration}")
+        if parts:
+            return f"{name}. " + " ".join(parts) + "."
+        return f"{name}. Details: {benefits or 'benefits not specified'}."
 
-    if "side effect" in question.lower():
-        return f"The product lists: {side_effects}"
+    if _has_word(q, "concentration") or re.search(r"\b\d+%|\bpercent\b", q, flags=re.I):
+        if concentration:
+            return f"The listed concentration is {concentration} (as provided in the product data)."
+        return "No concentration information is provided."
 
-    if "ingredient" in question.lower():
-        return f"The key ingredients are: {ingredients}."
+    if _has_word(q, "how do i use") or _has_word(q, "how to use") or _has_word(q, "use this product"):
+        if usage:
+            return f"Usage: {usage}"
+        return "Usage instructions are not specified."
 
-    if "benefit" in question.lower():
-        return f"The listed benefits are: {benefits}."
+    if _has_word(q, "retinol") or _has_word(q, "acids") or _has_word(q, "combine") or _has_word(q, "with other"):
+        return ("No explicit compatibility information with other actives is provided in the product data. "
+                "Refer to product guidance or the product label for compatibility recommendations.")
 
-    if "price" in question.lower() or "buy" in question.lower():
+    if _has_word(q, "side effect") or _has_word(q, "sensitive skin") or _has_word(q, "safety"):
+        if side_effects:
+            return f"Reported side effects: {side_effects}"
+        return "No side effects are listed in the provided product data."
+
+    if _has_word(q, "ingredient"):
+        if ingredients:
+            return f"Key ingredients: {ingredients}."
+        return "No ingredients are listed."
+
+    if _has_word(q, "price") or _has_word(q, "buy"):
         if price:
             return f"The listed price is ₹{price}."
-        else:
-            return "The price is not specified."
+        return "Price is not specified in the provided data."
 
-    if "compare" in question.lower():
-        return (
-            f"{name} contains {ingredients} and offers benefits such as {benefits}. "
-            "Comparison details depend on the other product’s attributes."
-        )
+    if _has_word(q, "suitable") or _has_word(q, "skin type") or _has_word(q, "oily") or _has_word(q, "combination"):
+        if skin_types:
+            return f"Listed skin types: {skin_types}."
+        return "No skin type suitability is provided."
 
-    if "suitable" in question.lower():
-        skin_types = ", ".join(product.get("skin_type", []))
-        return f"It is listed as suitable for: {skin_types}."
+    if _has_word(q, "store") or _has_word(q, "shelf") or _has_word(q, "expiry"):
+        return "No storage or shelf-life information is provided in the product data."
 
-    if "store" in question.lower():
-        return f"No specific storage instructions are provided beyond normal product care."
+    if _has_word(q, "how long") or _has_word(q, "results") or _has_word(q, "see results"):
+        if benefits:
+            return f"The product lists benefits such as: {benefits}. Results are dependent on consistent use."
+        return "No effectiveness information is provided."
 
-    if "shelf life" in question.lower():
-        return f"The shelf life is not specified in the provided data."
-
-    if "result" in question.lower():
-        return f"Results depend on consistent use. The listed benefits are: {benefits}."
-
-    # fallback generic answer
-    return f"This question relates to the product attributes: name={name}, benefits={benefits}, ingredients={ingredients}."
-    
+    summary_parts = []
+    if benefits:
+        summary_parts.append(f"benefits: {benefits}")
+    if ingredients:
+        summary_parts.append(f"ingredients: {ingredients}")
+    if concentration:
+        summary_parts.append(f"concentration: {concentration}")
+    if summary_parts:
+        return f"This relates to {name}; " + "; ".join(summary_parts) + "."
+    return f"No further details available for this question from the provided product data."
 
 def run_block(product_model: Dict, questions: List[Dict]):
     """
-    Returns: { "faq_items": [ {question, answer}, ... ] }
+    Returns: { "faq_items": [ { "question": str, "category": str, "answer": str }, ... ] }
     """
     items = []
     for q in questions:
-        q_text = q.get("text")
+        q_text = q.get("text", "")
+        q_cat = q.get("category", "")
         ans = derive_answer(q_text, product_model)
-        items.append({
-            "question": q_text,
-            "answer": ans
-        })
-
+        items.append({"question": q_text, "category": q_cat, "answer": ans})
     return {"faq_items": items}
