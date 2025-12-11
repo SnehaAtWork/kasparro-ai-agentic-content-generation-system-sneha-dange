@@ -1,5 +1,9 @@
 # Multi‑Agent Content Generation System
 
+## Branches
+- `main` — original submission
+- `langchain-rewrite` — LangChain migration (work in progress)
+
 This project implements a deterministic, testable, multi‑agent pipeline that converts a raw e‑commerce product JSON into three structured outputs:
 
 * `product_page.json`
