@@ -16,6 +16,9 @@ import os
 import json
 import re
 from typing import List, Dict
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 OPENAI_AVAILABLE = False
 try:
@@ -173,7 +176,7 @@ def paraphrase_faq_items(faq_items: List[Dict], product_fields: Dict, max_tokens
     try:
         raw_text = _call_openai(messages, model=model, max_tokens=max_tokens)
     except Exception as e:
-        print("[llm_adapter] paraphrase failed (API):", str(e))
+        logger.info("[llm_adapter] paraphrase failed (API):", str(e))
         return faq_items
 
     # parse JSON from model output (robust)
@@ -190,7 +193,7 @@ def paraphrase_faq_items(faq_items: List[Dict], product_fields: Dict, max_tokens
 
     if not parsed or not isinstance(parsed, list) or len(parsed) != len(faq_items):
         # Model didn't return expected JSON; don't change items
-        print("[llm_adapter] paraphrase: unexpected response shape; returning original items.")
+        logger.info("[llm_adapter] paraphrase: unexpected response shape; returning original items.")
         return faq_items
 
     result = []

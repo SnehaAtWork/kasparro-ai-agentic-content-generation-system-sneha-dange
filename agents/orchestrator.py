@@ -3,11 +3,13 @@
 OrchestratorAgent - orchestrates parser -> question generator -> logic blocks -> templater.
 Writes JSON outputs using UTF-8 encoding to avoid encoding errors on Windows (e.g. ₹).
 """
-import os
 import json
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 # lazy import helper to avoid import-time side effects
 def _lazy_import(name: str):
@@ -15,37 +17,51 @@ def _lazy_import(name: str):
     return module
 
 class OrchestratorAgent:
-    def __init__(self, config: dict = None):
+    """
+    OrchestratorAgent accepts an explicit `config` dict at construction time.
+    DO NOT read or set environment variables inside this module to avoid global side effects.
+    Expected config keys:
+      - "ollama_base": str (optional)  e.g. "http://localhost:11434"
+      - "use_ollama": str or bool (optional, default "1")
+    """
+
+    def __init__(self, config: dict | None = None):
         self.config = config or {}
 
     def _choose_llm_adapter(self) -> Optional[callable]:
         """
-        Prefer local Ollama adapter if available (OLLAMA_BASE), else try OpenAI adapter.
+        Prefer local Ollama adapter if the config provides an ollama_base and use_ollama is enabled.
         Returns a callable(llm_items, product_model) or None.
         """
-        # try Ollama first
-        try:
-            if os.getenv("OLLAMA_BASE") or os.getenv("USE_OLLAMA", "1") == "1":
-                # default base if unset
-                os.environ.setdefault("OLLAMA_BASE", "http://localhost:11434")
-                from agents.ollama_adapter import paraphrase_faq_items as ollama_paraphrase  # type: ignore
-                print("[orchestrator] Using Ollama adapter for FAQ paraphrasing.")
-                return ollama_paraphrase
-        except Exception as e:
-            print("[orchestrator] Ollama adapter not available:", e)
+        # prefer config values (no os.environ mutation here)
+        ollama_base = self.config.get("ollama_base")
+        use_ollama_raw = self.config.get("use_ollama", "1")
+        use_ollama = str(use_ollama_raw) == "1" or bool(use_ollama_raw) is True
 
-        # fallback to OpenAI adapter if available and key present
+        # try Ollama first if configured
+        if use_ollama and ollama_base:
+            try:
+                # lazy import the adapter (adapter is responsible for using the base URL)
+                from agents.ollama_adapter import paraphrase_faq_items as ollama_paraphrase  # type: ignore
+                logger.info("[orchestrator] Using Ollama adapter for FAQ paraphrasing (base=%s).", ollama_base)
+                # If your ollama_adapter needs the base URL, it should accept it via arguments or be constructed here.
+                # For example: return functools.partial(ollama_paraphrase, base_url=ollama_base)
+                return ollama_paraphrase
+            except Exception as e:
+                logger.info("[orchestrator] Ollama adapter not available: %s", e)
+
+        # fallback to OpenAI adapter if available and key present in env (OpenAI key is inherently an env secret)
         try:
             from agents.llm_adapter import paraphrase_faq_items as openai_paraphrase  # type: ignore
+            import os
             if os.getenv("OPENAI_API_KEY"):
-                print("[orchestrator] Using OpenAI adapter for FAQ paraphrasing.")
+                logger.info("[orchestrator] Using OpenAI adapter for FAQ paraphrasing.")
                 return openai_paraphrase
         except Exception as e:
-            # not fatal; adapter is optional
-            print("[orchestrator] OpenAI adapter not available:", e)
+            logger.info("[orchestrator] OpenAI adapter not available: %s", e)
 
         # no adapter available
-        print("[orchestrator] No LLM paraphrase adapter will be used (deterministic fallback).")
+        logger.info("[orchestrator] No LLM paraphrase adapter will be used (deterministic fallback).")
         return None
 
     def run(self, input_path: str, outputs_dir: str = "outputs") -> dict:
@@ -64,23 +80,23 @@ class OrchestratorAgent:
         from agents.template_engine import TemplateEngineAgent
 
         raw = json.loads(p.read_text(encoding="utf-8"))
-        print("[orchestrator] Loaded input:", input_path)
+        logger.info("[orchestrator] Loaded input: %s", input_path)
 
         # 1) parse
         parser = DataParserAgent()
         product_model = parser.run(raw)
-        print("[orchestrator] Parsed product:", product_model.get("name", product_model.get("id")))
+        logger.info("[orchestrator] Parsed product: %s", product_model.get("name", product_model.get("id")))
 
         # 2) questions
         qgen = QuestionGeneratorAgent()
         questions = qgen.run(product_model)
-        print(f"[orchestrator] Generated {len(questions.get('questions', []))} questions")
+        logger.info("[orchestrator] Generated %d questions", len(questions.get("questions", [])))
 
         # 3) choose adapter then run logic blocks
         llm_adapter = self._choose_llm_adapter()
         logic = LogicBlockEngineAgent(llm_adapter=llm_adapter)
         blocks = logic.run(product_model, questions).get("blocks", {})
-        print("[orchestrator] Logic blocks executed. Blocks:", list(blocks.keys()))
+        logger.info("[orchestrator] Logic blocks executed. Blocks: %s", list(blocks.keys()))
 
         # 4) templating
         templater = TemplateEngineAgent()
@@ -99,7 +115,7 @@ class OrchestratorAgent:
         faq_path = _write_json(pages["faq"], "faq.json")
         comparison_path = _write_json(pages["comparison"], "comparison_page.json")
 
-        print("[orchestrator] Wrote outputs to:", outdir)
+        logger.info("[orchestrator] Wrote outputs to: %s", outdir)
         return {
             "product_page": product_path,
             "faq": faq_path,

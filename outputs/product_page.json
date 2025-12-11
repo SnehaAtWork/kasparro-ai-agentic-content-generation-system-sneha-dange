@@ -1,7 +1,7 @@
 {
   "id": "product_001",
   "title": "GlowBoost Vitamin C Serum",
-  "hero_blurb": "GlowBoost Vitamin C Serum - Benefits: Brightening, Fades dark spots",
+  "hero_blurb": "GlowBoost Vitamin C Serum - Benefits: Brightening, Fades dark spots | 10% Vitamin C",
   "price_inr": 699,
   "price_statement": "Priced at ₹699.",
   "highlights": [
@@ -17,11 +17,11 @@
   "benefits": [
     {
       "title": "Brightening",
-      "explanation": "Brightening"
+      "explanation": "Brightening effect."
     },
     {
       "title": "Fades dark spots",
-      "explanation": "Fades dark spots"
+      "explanation": "Fades dark spots effect."
     }
   ],
   "usage": "Apply 2–3 drops in the morning before sunscreen",
@@ -36,6 +36,6 @@
       "Combination"
     ]
   },
-  "last_updated": "2025-12-09T05:45:55.927572Z",
+  "last_updated": "2025-12-11T20:53:44.121876Z",
   "source": "input_product_model"
 }
