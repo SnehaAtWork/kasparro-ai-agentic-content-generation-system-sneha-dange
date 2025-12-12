@@ -1000,7 +1000,7 @@ To process multiple product inputs:
 
 ---
 
-## **11.7 Robust Block Invocation (Signature-Aware)
+## **11.7 Robust Block Invocation (Signature-Aware)**
 
 LogicBlockEngineAgent uses a tolerant dispatcher, `_call_block_fn`, which:
 

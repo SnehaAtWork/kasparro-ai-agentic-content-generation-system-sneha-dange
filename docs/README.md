@@ -102,21 +102,19 @@ Supports:
 ## LangChain Runnable DAG
 
 ```mermaid
-digraph G {
-    node [shape=box, style=rounded]
+flowchart TD
+    A[Raw Product Input]
+    B[parse_r<br/>(DataParserAgent)]
+    C[questions_r<br/>(QuestionGeneratorAgent)]
+    D[logic_r<br/>(LogicBlockEngineAgent)]
+    E[template_r<br/>(TemplateEngineAgent)]
 
-    A [label="Raw Product Input"]
-    B [label="parse_r\n(DataParserAgent)"]
-    C [label="questions_r\n(QuestionGeneratorAgent)"]
-    D [label="logic_r\n(LogicBlockEngineAgent)"]
-    E [label="template_r\n(TemplateEngineAgent)"]
+    A --> B --> C --> D --> E
 
-    A -> B -> C -> D -> E
+    E --> F[product_page.json]
+    E --> G[faq.json]
+    E --> H[comparison_page.json]
 
-    E -> F [label="product_page.json"]
-    E -> G [label="faq.json"]
-    E -> H [label="comparison_page.json"]
-}
 ```
 
 ---
