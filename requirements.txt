@@ -5,7 +5,8 @@ isort
 python-dotenv>=1.0.0
 pydantic>=1.10
 jinja2>=3.1
-langchain>=0.0.400
+langchain==1.1.3
+langchain-core==1.1.3
 openai>=0.27.0
 pytest>=7.0
 requests>=2.28

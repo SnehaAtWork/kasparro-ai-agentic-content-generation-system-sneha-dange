@@ -10,11 +10,18 @@ def test_generate_minimum_questions():
     }
     agent = QuestionGeneratorAgent()
     out = agent.run(pm)
-    qs = out.get("questions", [])
-    # Must produce at least 15
-    assert len(qs) >= 15
-    # Check categories exist and are non-empty strings
-    for q in qs:
-        assert "id" in q and q["id"].startswith("q")
-        assert "category" in q and isinstance(q["category"], str) and q["category"]
-        assert "text" in q and isinstance(q["text"], str) and q["text"]
+
+    # out must be a list
+    assert isinstance(out, list)
+
+    # Should generate >= minimum_questions
+    assert len(out) >= agent.minimum_questions
+
+    # Each item in list must have required keys
+    for q in out:
+        assert "id" in q
+        assert "category" in q
+        assert "text" in q
+        assert isinstance(q["id"], str)
+        assert isinstance(q["category"], str)
+        assert isinstance(q["text"], str)

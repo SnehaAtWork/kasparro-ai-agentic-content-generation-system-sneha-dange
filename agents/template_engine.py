@@ -130,12 +130,10 @@ class TemplateEngineAgent:
                 pb = product_model.get("benefits") or []
                 page["benefits"] = [{"title": b, "explanation": b} for b in pb]
 
-        # Ensure metadata present
-        if not page.get("metadata"):
-            page["metadata"] = {
-                "concentration": product_model.get("concentration") or None,
-                "skin_type": product_model.get("skin_type") or []
-            }
+       # Ensure price_inr always exists for template validation
+        if "price_inr" not in page or page.get("price_inr") is None:
+            page["price_inr"] = product_model.get("price_inr")
+
 
         # Ensure list-like fields are non-null
         if page.get("highlights") is None:

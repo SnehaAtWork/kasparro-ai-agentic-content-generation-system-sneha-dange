@@ -1,113 +1,122 @@
 # agents/question_generator.py
 """
-Deterministic QuestionGeneratorAgent.
+QuestionGeneratorAgent
 
-Generates 15+ categorized questions based on ProductModel input.
-Optional: an LLM adapter hook (not used by default).
+Produces a deterministic, config-driven set of questions for a product model.
+The agent exposes a simple public API:
+    qagent = QuestionGeneratorAgent()
+    questions = qagent.run(product_model)
+
+Questions are returned as a list of dicts with keys:
+    - id: unique string
+    - category: category name
+    - text: question text
+
+This implementation avoids imperative construction and instead uses a template list
+for transparency and easy extension.
 """
-from typing import Dict, List, Callable, Optional
+
+from typing import Dict, List, Any
+import itertools
+import re
 
 
-DEFAULT_CATEGORIES = [
-    "Informational",
-    "Usage",
-    "Safety",
-    "Purchase",
-    "Comparison",
-    "Ingredients",
-    "Storage",
-    "Suitability",
-    "Effectiveness",
-]
+def _mk(qid: int, category: str, text: str) -> Dict[str, Any]:
+    return {"id": f"q{qid:03d}", "category": category, "text": text}
 
 
-def _normalize_name(product_model: Dict) -> str:
-    return product_model.get("name") or "this product"
-
-
-def _mk(qid: int, category: str, text: str) -> Dict:
-    return {"id": f"q{qid}", "category": category, "text": text}
+def _normalize_name(product: Dict) -> str:
+    name = product.get("name") or product.get("Product Name") or product.get("title") or "the product"
+    # collapse whitespace
+    return re.sub(r"\s+", " ", str(name)).strip()
 
 
 class QuestionGeneratorAgent:
-    def __init__(self, config: Dict = None, llm_adapter: Optional[Callable] = None):
-        """
-        config: optional config dict
-        llm_adapter: optional callable(fn: List[Dict]) -> List[Dict] that can augment/paraphrase questions.
-        """
-        self.config = config or {}
-        self.llm_adapter = llm_adapter
+    """
+    Config-driven question generator.
+    The templates list can be adjusted or loaded from an external YAML/JSON config if desired.
+    """
 
-    def _generate_seed_questions(self, product_model: Dict) -> List[Dict]:
-        name = _normalize_name(product_model)
-        concentration = product_model.get("concentration")
-        ingredients = product_model.get("ingredients", [])
-        price = product_model.get("price_inr")
+    # Default templates (category, template)
+    _TEMPLATES = [
+        ("Informational", "What is {name} and who is it for?"),
+        ("Informational", "What does the concentration {concentration} mean for users?"),
+        ("Usage", "How do I use {name} (steps and frequency)?"),
+        ("Usage", "Can I use {name} with other skincare actives like retinol or acids?"),
+        ("Safety", "Are there any side effects when using {name}?"),
+        ("Safety", "Is {name} safe for sensitive skin?"),
+        ("Purchase", "What is the price of {name} and is it value for money?"),
+        ("Purchase", "Where can I buy {name} and are there discounts available?"),
+        ("Comparison", "How does {name} compare to other Vitamin C serums?"),
+        ("Comparison", "What are the advantages of {name} over similar products?"),
+        ("Ingredients", "What are the key ingredients in {name} and what do they do?"),
+        ("Ingredients", "Is Hyaluronic Acid in {name} safe to use with Vitamin C?"),
+        ("Storage", "How should I store {name} to preserve potency?"),
+        ("Storage", "What is the typical shelf life of {name} after opening?"),
+        ("Suitability", "Is {name} suitable for oily and combination skin?"),
+        ("Effectiveness", "How long before I see results with regular use of {name}?"),
+        ("Safety", "Should I do a patch test before using {name}?"),
+    ]
 
-        qs = []
+    def __init__(self, templates: List[tuple] = None, minimum_questions: int = 12):
+        # Allow overriding templates for tests or customization
+        self.templates = templates if templates is not None else list(self._TEMPLATES)
+        self.minimum_questions = int(minimum_questions)
+
+    def _render_templates(self, product: Dict) -> List[Dict[str, str]]:
+        name = _normalize_name(product)
+        concentration = product.get("concentration") or product.get("Concentration") or ""
+        # Attempt to normalize ingredients & price for template niceties
+        ingredients = product.get("ingredients") or product.get("Key Ingredients") or []
+        try:
+            ing_sample = ", ".join(ingredients[:2]) if isinstance(ingredients, (list, tuple)) and ingredients else ""
+        except Exception:
+            ing_sample = ""
+
+        rendered = []
+        for cat, tpl in self.templates:
+            text = tpl.format(name=name, concentration=concentration, ingredients=ing_sample)
+            rendered.append({"category": cat, "text": text})
+        return rendered
+
+    def run(self, product_model: Dict) -> List[Dict]:
+        """
+        Generate questions for the provided product_model.
+
+        Returns:
+            List[Dict]: list of question dicts with keys id, category, text
+        """
+        # Defensive: accept either raw product dict or structured model
+        if product_model is None:
+            product_model = {}
+
+        # Render templates into concrete text
+        rendered = self._render_templates(product_model)
+
+        # If templates produce fewer than minimum_questions, auto-generate extras
+        questions = []
         qid = 1
+        for item in rendered:
+            questions.append(_mk(qid, item["category"], item["text"]))
+            qid += 1
 
-        # Informational
-        qs.append(_mk(qid, "Informational", f"What is {name} and who is it for?")); qid += 1
-        qs.append(_mk(qid, "Informational", f"What does the concentration {concentration or 'N/A'} mean?")); qid += 1
+        # Add filler questions if below minimum
+        base_name = _normalize_name(product_model)
+        while len(questions) < self.minimum_questions:
+            questions.append(_mk(qid, "Informational", f"Additional question about {base_name} #{qid}"))
+            qid += 1
 
-        # Usage
-        qs.append(_mk(qid, "Usage", f"How do I use {name} (steps and frequency)?")); qid += 1
-        qs.append(_mk(qid, "Usage", f"Can I use {name} with other skincare products like retinol or acids?")); qid += 1
+        return questions
 
-        # Safety
-        qs.append(_mk(qid, "Safety", f"Are there any side effects when using {name}?")); qid += 1
-        qs.append(_mk(qid, "Safety", f"Can people with sensitive skin use {name}?")); qid += 1
 
-        # Purchase
-        qs.append(_mk(qid, "Purchase", f"What is the price of {name} and is it value for money?")); qid += 1
-        qs.append(_mk(qid, "Purchase", f"Where can I buy {name} and are there discounts available?")); qid += 1
-
-        # Comparison
-        qs.append(_mk(qid, "Comparison", f"How does {name} compare to other Vitamin C serums?")); qid += 1
-        qs.append(_mk(qid, "Comparison", f"What are the advantages of {name} over similar products?")); qid += 1
-
-        # Ingredients
-        qs.append(_mk(qid, "Ingredients", f"What are the key ingredients in {name} and their roles?")); qid += 1
-        qs.append(_mk(qid, "Ingredients", f"Is Hyaluronic Acid in {name} safe to use with Vitamin C?")); qid += 1
-
-        # Storage & Expiry
-        qs.append(_mk(qid, "Storage", f"How should I store {name} to preserve potency?")); qid += 1
-        qs.append(_mk(qid, "Storage", f"What is the typical shelf life of {name} after opening?")); qid += 1
-
-        # Suitability & Effectiveness
-        qs.append(_mk(qid, "Suitability", f"Is {name} suitable for oily and combination skin?")); qid += 1
-        qs.append(_mk(qid, "Effectiveness", f"How long before I see results with regular use of {name}?")); qid += 1
-
-        # Safety extra: patch tests
-        qs.append(_mk(qid, "Safety", f"Should I do a patch test before using {name}?")); qid += 1
-
-        # Trim or expand logic can go here
-        return qs
-
-    def run(self, product_model: Dict) -> Dict:
-        """
-        Returns: { "questions": [ {id, category, text}, ... ] }
-        Guarantees: >= 15 questions (if seed < 15, repeats are avoided by generating fallback generic questions)
-        """
-        seed = self._generate_seed_questions(product_model)
-
-        # Ensure at least 15 unique questions
-        if len(seed) < 15:
-            extra_needed = 15 - len(seed)
-            base = product_model.get("name", "the product")
-            for i in range(extra_needed):
-                seed.append(_mk(len(seed) + 1, "Informational", f"Additional question about {base} #{i+1}"))
-
-        # Optional: call llm_adapter to paraphrase / expand (must return validated structure)
-        if self.llm_adapter:
-            try:
-                augmented = self.llm_adapter(seed)
-                # basic validation: list of dicts with id, category, text
-                if isinstance(augmented, list) and all(isinstance(q, dict) for q in augmented):
-                    return {"questions": augmented}
-            except Exception:
-                # fallback to deterministic seed if adapter fails
-                pass
-
-        return {"questions": seed}
+# Simple manual test when run as script
+if __name__ == "__main__":
+    sample = {
+        "name": "GlowBoost Vitamin C Serum",
+        "concentration": "10% Vitamin C",
+        "ingredients": ["Vitamin C", "Hyaluronic Acid"]
+    }
+    agent = QuestionGeneratorAgent()
+    qs = agent.run(sample)
+    for q in qs:
+        print(q)

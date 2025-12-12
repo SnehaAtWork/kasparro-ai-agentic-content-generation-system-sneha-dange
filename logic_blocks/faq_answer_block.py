@@ -3,8 +3,10 @@
 FAQ Answer Block (improved)
 Generates deterministic answers derived only from the product_model fields.
 No external facts or research are added.
-"""
 
+This implementation is based on your prior version but cleaned for readability
+and clearer fallbacks. See original upload for provenance. :contentReference[oaicite:3]{index=3}
+"""
 from typing import Dict, List
 import re
 
@@ -15,18 +17,11 @@ def _has_word(q: str, word: str):
     return re.search(rf"\b{re.escape(word)}\b", q, flags=re.I) is not None
 
 def _has_side_effects_phrase(q: str) -> bool:
-    """
-    Match both 'side effect' and 'side effects' and common phrasing like 'any side effects'.
-    """
     if not q:
         return False
     return re.search(r"\bside\s*effects?\b", q, flags=re.I) is not None
 
 def derive_answer(question: str, product: Dict) -> str:
-    """
-    Create concise, product-derived answers for FAQ.
-    Uses only product fields (name, usage, benefits, ingredients, side_effects, skin_type, price_inr, concentration).
-    """
     q = (question or "").strip()
     name = product.get("name", "the product")
     usage = product.get("usage") or product.get("how_to_use") or ""
@@ -59,13 +54,11 @@ def derive_answer(question: str, product: Dict) -> str:
     # 3) How to use / usage steps
     if _has_word(q, "how do i use") or _has_word(q, "how to use") or _has_word(q, "use this product"):
         if usage:
-            # changed to include the token 'use' so tests that search for 'use' in the answer pass
             return f"You can use {name} as follows: {usage}"
         return "Usage instructions are not specified."
 
-    # 4) Compatibility with other actives (retinol / acids)
+    # 4) Compatibility with other actives
     if _has_word(q, "retinol") or _has_word(q, "acids") or _has_word(q, "combine") or _has_word(q, "with other"):
-        # We cannot state external rules; only report what's in the product data.
         return ("No explicit compatibility information with other actives is provided in the product data. "
                 "Refer to product guidance or the product label for compatibility recommendations.")
 
@@ -100,10 +93,10 @@ def derive_answer(question: str, product: Dict) -> str:
     # 10) Results / effectiveness timeframe
     if _has_word(q, "how long") or _has_word(q, "results") or _has_word(q, "see results"):
         if benefits:
-            return f"The product lists benefits such as: {benefits}. Results are dependent on consistent use."
+            return f"The product lists benefits such as: {benefits}. Results depend on consistent use."
         return "No effectiveness information is provided."
 
-    # Final fallback: a concise product-sourced summary
+    # Final fallback: concise product-sourced summary
     summary_parts = []
     if benefits:
         summary_parts.append(f"benefits: {benefits}")
@@ -116,14 +109,10 @@ def derive_answer(question: str, product: Dict) -> str:
     return f"No further details available for this question from the provided product data."
 
 def run_block(product_model: Dict, questions: List[Dict]):
-    """
-    Returns: { "faq_items": [ { "question": str, "category": str, "answer": str }, ... ] }
-    Produces answers in the same order as the passed questions.
-    """
     items = []
     for q in questions:
-        q_text = q.get("text", "")
-        q_cat = q.get("category", "")
+        q_text = q.get("text") or q.get("q") or ""
+        q_cat = q.get("category") or q.get("category_name") or ""
         ans = derive_answer(q_text, product_model)
         items.append({"question": q_text, "category": q_cat, "answer": ans})
     return {"faq_items": items}

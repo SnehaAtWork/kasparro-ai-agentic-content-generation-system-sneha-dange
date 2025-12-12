@@ -78,14 +78,47 @@ def parse_raw_product(raw: Dict[str, Any]) -> ProductModel:
     # normalize keys (allow different casing/underscores)
     # map expected keys to raw fields
     mapping = {
-        "name": raw.get("product_name") or raw.get("name") or raw.get("product"),
-        "concentration": raw.get("concentration"),
-        "skin_type": raw.get("skin_type"),
-        "ingredients": raw.get("key_ingredients") or raw.get("ingredients"),
-        "benefits": raw.get("benefits"),
-        "usage": raw.get("how_to_use") or raw.get("usage"),
-        "side_effects": raw.get("side_effects"),
+        # accept all common variants
+        "name": (
+            raw.get("product_name")
+            or raw.get("Product Name")
+            or raw.get("name")
+            or raw.get("product")
+        ),
+
+        "concentration": (
+            raw.get("concentration")
+            or raw.get("Concentration")
+        ),
+
+        "skin_type": (
+            raw.get("skin_type")
+            or raw.get("Skin Type")
+        ),
+
+        "ingredients": (
+            raw.get("key_ingredients")
+            or raw.get("Key Ingredients")
+            or raw.get("ingredients")
+        ),
+
+        "benefits": (
+            raw.get("benefits")
+            or raw.get("Benefits")
+        ),
+
+        "usage": (
+            raw.get("how_to_use")
+            or raw.get("How to Use")
+            or raw.get("usage")
+        ),
+
+        "side_effects": (
+            raw.get("side_effects")
+            or raw.get("Side Effects")
+        ),
     }
+
     pm_input = {
         "id": raw.get("id", "product_001"),
         "raw": raw,
