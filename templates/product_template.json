@@ -15,5 +15,5 @@
     "safety": {"type":"string","source":"blocks.safety_block.text"},
     "metadata": {"type":"object","source":"product.metadata"}
   },
-  "required": ["id", "title", "hero_blurb", "price_inr"]
+  "required": ["id", "title", "hero_blurb"]
 }

@@ -15,6 +15,9 @@ from agents.question_generator import QuestionGeneratorAgent  # :contentReferenc
 from agents.logic_engine import LogicBlockEngineAgent   # :contentReference[oaicite:7]{index=7}
 from agents.template_engine import TemplateEngineAgent  # :contentReference[oaicite:8]{index=8}
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 # Wrap each agent.run() method as a LangChain FunctionChain
 parse_chain = FunctionChain(
@@ -102,6 +105,6 @@ if __name__ == "__main__":
         "Price": "₹699"
     }
 
-    print("Running LangChain(FunctionChain)-based orchestrator...")
+    logger.info("Running LangChain(FunctionChain)-based orchestrator...")
     res = run_pipeline(SAMPLE)
-    print("Artifacts written:", res)
+    logger.info("Artifacts written:", res)

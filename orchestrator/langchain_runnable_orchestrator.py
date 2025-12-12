@@ -13,6 +13,8 @@ from agents.question_generator import QuestionGeneratorAgent # :contentReference
 from agents.logic_engine import LogicBlockEngineAgent        # :contentReference[oaicite:11]{index=11}
 from agents.template_engine import TemplateEngineAgent       # :contentReference[oaicite:12]{index=12}
 
+import logging
+logger = logging.getLogger(__name__)
 
 # ---- Wrap each agent.run() in a RunnableLambda (or shim fallback) ----
 
@@ -113,6 +115,6 @@ if __name__ == "__main__":
         "Price": "₹699"
     }
 
-    print("Running LangChain Runnable-based orchestrator...")
+    logger.info("Running LangChain Runnable-based orchestrator...")
     res = run_pipeline_runnable(SAMPLE)
-    print("Artifacts written:", res)
+    logger.info("Artifacts written:", res)

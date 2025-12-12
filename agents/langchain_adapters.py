@@ -10,6 +10,9 @@ This module:
 
 from typing import Any, Callable, Dict, List, Optional
 import traceback, sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 LangChainBase = None
 _import_attempts = []
@@ -29,16 +32,16 @@ for mod_path, attr in candidates:
         LangChainBase = getattr(module, attr, None)
         _import_attempts.append((mod_path, attr, True, getattr(module, '__file__', None)))
         if LangChainBase is not None:
-            print(f"[langchain-adapter] Found Chain at {mod_path}.{attr} (module file: {getattr(module, '__file__', None)})")
+            logger.info(f"[langchain-adapter] Found Chain at {mod_path}.{attr} (module file: {getattr(module, '__file__', None)})")
             break
     except Exception as e:
         _import_attempts.append((mod_path, attr, False, repr(e)))
 
 if LangChainBase is None:
-    print("[langchain-adapter] Could not locate a Chain class in tried paths. Import attempts:")
+    logger.info("[langchain-adapter] Could not locate a Chain class in tried paths. Import attempts:")
     for p, a, ok, info in _import_attempts:
-        print(f" - {p}.{a} -> success={ok}, info={info}")
-    print("[langchain-adapter] Falling back to plain `object` as Chain base. Tests will still run.")
+        logger.info(f" - {p}.{a} -> success={ok}, info={info}")
+    logger.info("[langchain-adapter] Falling back to plain `object` as Chain base. Tests will still run.")
 
 # Final fallback
 if LangChainBase is None:
