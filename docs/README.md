@@ -1,68 +1,49 @@
-# Multi‑Agent Content Generation System
+# Multi‑Agent Content Generation System (Final Updated README)
 
-## Branches
-- `main` — original submission
-- `langchain-rewrite` — LangChain migration (work in progress)
+## Overview
 
-This project implements a deterministic, testable, multi‑agent pipeline that converts a raw e‑commerce product JSON into three structured outputs:
+This project implements a **modular, deterministic, LangChain‑orchestrated content generation system** that converts a raw product JSON into three structured artifacts:
 
 * `product_page.json`
 * `comparison_page.json`
 * `faq.json`
 
-The system is designed according to the requirements of the **Applied AI Engineer Challenge**, with strict constraints:
+It satisfies the requirements of the **Applied AI Engineer Challenge**, emphasizing:
 
-* No model hallucinations
-* No domain knowledge or external assumptions
-* Pure, deterministic logic blocks
-* No hidden global state
-* Optional LLM use only for paraphrasing, never for generating facts
+* Zero hallucinations
+* Deterministic, testable agents
+* Fully traceable LangChain pipeline
+* Optional LLM augmentation (via Ollama) **only for paraphrasing**, never fact generation
+* Clean separation of concerns between parsing, logic, comparison, and templating
 
-## LangChain-Based Orchestration
+The system ships in **two modes**:
 
-The final system uses **LangChain Runnables** as the orchestration layer.
+### 🔹 1. Deterministic Mode (Default)
 
-Each agent (`DataParserAgent`, `QuestionGeneratorAgent`, `LogicBlockEngineAgent`, `TemplateEngineAgent`) is wrapped using `wrap_as_runnable()` and executed via `.invoke()` inside `run_pipeline.py`.
+No LLM calls. All text generation is rule‑based and reproducible.
 
-### Why this matters
-- Provides production-grade composability and traceability.
-- Ensures each stage is observable and debuggable.
-- Makes the agent pipeline declarative rather than imperative.
-- Cleanly separates business logic (agents) from control flow (LangChain).
-- Provides a framework-standard execution interface for future extensions.
+### 🔹 2. LLM‑Augmented Mode (Optional)
 
-### Example Runnable
+Uses the **safe paraphrasing adapter** to rewrite deterministic answers *without altering facts*.
+Enabled via environment variable:
 
-```python
-parse_r = wrap_as_runnable(lambda raw: DataParserAgent().run(raw), name="parse_product")
-product_model = parse_r.invoke(raw_input)
+```env
+USE_OLLAMA=1
 ```
-
-### Why a Custom Template Engine?
-
-LangChain prompt templates are designed for LLM prompting, not deterministic
-structured JSON assembly. The challenge requires reproducible, rule-based
-content generation without LLM involvement. Therefore a custom TemplateEngineAgent
-implements:
-
-- Field sourcing (`product.field`, `blocks.key.items`)
-- Max-length constraints
-- Required-field validation
-- Fallback text
 
 ---
 
-## 1. Project Structure
+## Project Structure
 
 ```
 ├── agents/
 │   ├── data_parser.py
 │   ├── question_generator.py
 │   ├── logic_engine.py
+│   ├── template_engine.py
 │   ├── langchain_runnables.py
 │   ├── langchain_adapters.py
-│   ├── template_engine.py
-│   ├── ollama_adapter.py (optional LLM paraphrasing)
+│   ├── ollama_adapter.py   # optional paraphrasing
 ├── logic_blocks/
 ├── templates/
 ├── tests/
@@ -74,89 +55,189 @@ implements:
 
 ---
 
-## 2. Pipeline Overview
+## System Architecture
 
-1. **DataParserAgent** – Normalises raw product JSON into a typed product model.
-2. **QuestionGeneratorAgent** – Generates structured FAQ questions based on available fields.
-3. **LogicBlockEngineAgent** – Executes deterministic logic blocks:
+The system consists of four core agents wrapped as **LangChain Runnables**:
 
-   * product, benefits, usage, safety, ingredients
-   * synthetic product B generation
-   * deep comparison, scoring, recommendation
-4. **TemplateEngineAgent** – Renders structured JSON outputs.
-5. **Optional LLM Adapter** – Paraphrases FAQ answers without adding facts.
-6. Outputs written atomically to `outputs/`.
+### 1. **DataParserAgent**
 
-### LangChain Runnable DAG
+Normalizes raw product JSON → typed `ProductModel`.
+Handles:
+
+* fuzzy key matching
+* price parsing
+* validation
+
+### 2. **QuestionGeneratorAgent**
+
+Deterministically produces the required FAQ onboarding questions.
+
+### 3. **LogicBlockEngineAgent**
+
+Executes modular logic blocks located in `logic_blocks/`:
+
+* product_block
+* benefits_block
+* usage_block
+* safety_block
+* ingredients_block
+* compare_block
+* purchase_block
+* faq_answer_block (**refined v2** category‑aware, safe)
+
+This stage also supports **optional paraphrasing** via the LLM adapter.
+
+### 4. **TemplateEngineAgent**
+
+Renders structured JSON outputs from templates.
+Supports:
+
+* dynamic field resolution
+* fallback rules
+* max‑length enforcement
+* usage → steps transformation
+
+---
+
+## LangChain Runnable DAG
 
 ```mermaid
-flowchart LR
-    A[Raw Input] --> B((parse_r))
-    B --> C((questions_r))
-    C --> D((logic_r))
-    D --> E((template_r))
-    E --> F[product_page.json]
-    E --> G[faq.json]
-    E --> H[comparison_page.json]
+digraph G {
+    node [shape=box, style=rounded]
+
+    A [label="Raw Product Input"]
+    B [label="parse_r\n(DataParserAgent)"]
+    C [label="questions_r\n(QuestionGeneratorAgent)"]
+    D [label="logic_r\n(LogicBlockEngineAgent)"]
+    E [label="template_r\n(TemplateEngineAgent)"]
+
+    A -> B -> C -> D -> E
+
+    E -> F [label="product_page.json"]
+    E -> G [label="faq.json"]
+    E -> H [label="comparison_page.json"]
+}
 ```
 
 ---
 
-## 3. Running the Pipeline
+## Execution Flow (High‑Level)
 
-Activate your environment, then run:
+1. **load_input** → product JSON
+2. **parse_r.invoke** → structured model
+3. **questions_r.invoke** → deterministic FAQ question set
+4. **logic_r.invoke** → all logic blocks run, including comparison engine and FAQ v2 answerer
+5. **template_r.invoke** → renders JSON outputs
+6. **write_outputs** → stored in `outputs/`
 
-```bash
-python run_pipeline.py -i inputs/product_input.json -o outputs/
-```
-
-Outputs are created in `./outputs/`.
-
----
-
-## 4. Design Principles
-
-* **Deterministic by default** – all core transformations are rule‑based.
-* **Clear agent boundaries** – each agent performs exactly one responsibility.
-* **No side effects** – no API calls inside logic blocks.
-* **Replaceable adapters** – paraphrasing can be toggled via environment variables.
-* **Strict validation** – paraphraser outputs are validated to prevent hallucinations.
+Each step is fully logged and traceable.
 
 ---
 
-## 5. Extensibility
+## FAQ Answering Logic (Refined v2)
 
-* Add new logic blocks by extending `logic_blocks/` and registering them.
-* Add new templates by modifying `templates/` and updating `TemplateEngineAgent`.
-* Swap LLM providers by implementing the same paraphrase adapter contract.
+The FAQ system uses a **6‑category taxonomy**:
+
+* `overview`
+* `usage`
+* `ingredients` (includes compatibility)
+* `safety` (includes skin‑type suitability)
+* `value` (price + purchase + value‑for‑money)
+* `other` (storage, shelf life, comparison)
+
+### Key Properties
+
+* Zero hallucinations
+* Strong question intent matching
+* Dedicated compatibility fallbacks
+* Deterministic explanations for concentration, suitability, shelf‑life
+* Optional LLM paraphrasing with **factual drift detection**
 
 ---
 
-## 6. Testing
+## Testing
 
-Run all tests:
+Run all tests with:
 
 ```bash
 pytest -q
 ```
 
-Tests cover parsing, FAQ generation, comparison logic, and recommendation rules.
+Test coverage includes:
+
+* product parsing
+* question generation
+* comparison logic (scoring, recommendations)
+* FAQ answering (v2 deterministic logic)
+* E2E pipeline execution
 
 ---
 
-## 7. Outputs
+## 🛠 Running the Pipeline
 
-Each output is guaranteed to be:
+```bash
+python run_pipeline.py -i inputs/product_input.json -o outputs/
+```
 
-* JSON‑serializable
-* UTF‑8 encoded
-* Deterministic (except optional paraphrasing)
+Outputs appear in:
+
+```
+outputs/product_page.json
+outputs/faq.json
+outputs/comparison_page.json
+```
 
 ---
 
-## 8. License
+## Mode Switching (Deterministic ↔ LLM)
 
-This repository is for evaluation and demonstration purposes.
+### Deterministic Mode
+
+```env
+USE_OLLAMA=0
+```
+
+### LLM‑Augmented Mode
+
+```env
+USE_OLLAMA=1
+OLLAMA_BASE=http://localhost:11434
+OLLAMA_MODEL=llama3:8b
+```
+
+In LLM mode:
+
+* Only paraphrasing occurs
+* All factual content comes from deterministic blocks
+* Drift detector ensures paraphrases stay faithful
+
+---
+
+## Design Principles
+
+* **Deterministic by default** (99% of the system)
+* **Optional LLM augmentation** for natural phrasing
+* **Separation of concerns** via well‑scoped agents
+* **Composable pipeline** using LangChain Runnables
+* **Full transparency** — all stages logged and traceable
+* **Safety first** — never generate new facts through LLMs
+
+---
+
+## Extensibility
+
+You can easily:
+
+* Add new logic blocks under `logic_blocks/`
+* Extend templates under `templates/`
+* Swap LLMs by providing a new paraphrase adapter
+* Add new output types (e.g., marketing copy, SEO bullets)
+
+---
+
+## License
+
+For evaluation and demonstration purposes only.
 
 ---
 

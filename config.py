@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Optional LLM toggle
 USE_OLLAMA = os.getenv("USE_OLLAMA", "0").lower() in ("1", "true", "yes")

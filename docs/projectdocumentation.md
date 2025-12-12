@@ -1,3 +1,6 @@
+# Project Documentation
+
+This document provides the full system-level technical documentation for the Multi-Agent Content Generation System built for the Kasparro Applied AI Engineer Challenge. The system converts a structured product input into three machine-readable JSON outputs using a deterministic, LangChain-orchestrated DAG. Agents are modular, independently testable, and designed for reproducibility and safety. Optional LLM paraphrasing is provided through a strictly validated adapter that never introduces new facts. This documentation covers architecture, agent responsibilities, logic blocks, templates, safety design, testing strategy, and the complete execution flow.
 
 # Problem Statement
 
@@ -1179,35 +1182,36 @@ Below is a Mermaid flowchart representing the complete execution flow of the Mul
 ```mermaid
 flowchart TD
 
-  Start[Start] --> Parse[Parse Input JSON]
-  Parse --> Normalize[Normalize keys and map variants]
-  Normalize --> Validate[Validate ProductModel schema]
-  Validate --> CheckValid{ProductModel valid}
-  CheckValid -->|yes| Questions[Generate Questions deterministically]
-  CheckValid -->|no| Fail[Emit validation error and stop]
-  Questions --> LogicEngine[Execute Logic Blocks sequence]
-  subgraph BlocksLoop[Logic Blocks Execution]
-    direction TB
-    BlocksLoopStart[Begin blocks sequence] --> ProductBlock[Run product_block]
-    ProductBlock --> BenefitsBlock[Run benefits_block]
-    BenefitsBlock --> UsageBlock[Run usage_block]
-    UsageBlock --> SafetyBlock[Run safety_block]
-    SafetyBlock --> IngredientsBlock[Run ingredients_block]
-    IngredientsBlock --> CompareBlock[Run compare_block]
-    CompareBlock --> PurchaseBlock[Run purchase_block]
-    PurchaseBlock --> FAQBlock[Run faq_answer_block]
-    FAQBlock --> BlocksLoopEnd[End blocks sequence]
-  end
-  LogicEngine --> BlocksLoop
-  BlocksLoopEnd --> AdapterCheck{LLM adapter configured}
-  AdapterCheck -->|yes| Paraphrase[Paraphrase FAQ items via adapter with strict constraints]
-  AdapterCheck -->|no| SkipParaphrase[Skip paraphrasing]
-  Paraphrase --> MergeBlocks[Merge paraphrased FAQ into blocks]
-  SkipParaphrase --> MergeBlocks
-  MergeBlocks --> TemplateRender[Render Templates deterministically]
-  TemplateRender --> WriteArtifacts[Write product_page json FAQ json comparison json]
-  WriteArtifacts --> Checkpoints[Save intermediate checkpoints for traceability]
-  Checkpoints --> End[End]
+    Start --> ParseInput
+    ParseInput --> NormalizeKeys
+    NormalizeKeys --> ValidateModel
+    ValidateModel -->|valid| GenerateQuestions
+    ValidateModel -->|invalid| Stop[Stop: Validation Error]
+
+    GenerateQuestions --> RunLogicBlocks
+
+    subgraph LogicBlocks [Deterministic Logic Blocks]
+        direction TB
+        ProductBlock --> BenefitsBlock
+        BenefitsBlock --> UsageBlock
+        UsageBlock --> SafetyBlock
+        SafetyBlock --> IngredientsBlock
+        IngredientsBlock --> CompareBlock
+        CompareBlock --> PurchaseBlock
+        PurchaseBlock --> FAQBlock
+    end
+
+    RunLogicBlocks --> CheckLLM{USE_OLLAMA enabled?}
+
+    CheckLLM -->|no| SkipLLM[Skip paraphrasing]
+    CheckLLM -->|yes| Paraphrase[Apply Safe LLM Paraphraser]
+
+    SkipLLM --> TemplateEngine
+    Paraphrase --> TemplateEngine
+
+    TemplateEngine --> WriteOutputs[Write Artifacts: product_page.json FAQ.json comparison_page.json]
+    WriteOutputs --> SaveCheckpoints[Save intermediate checkpoints]
+    SaveCheckpoints --> End
 
 ```
 
