@@ -18,6 +18,38 @@ The system is designed according to the requirements of the **Applied AI Enginee
 * No hidden global state
 * Optional LLM use only for paraphrasing, never for generating facts
 
+## LangChain-Based Orchestration
+
+The final system uses **LangChain Runnables** as the orchestration layer.
+
+Each agent (`DataParserAgent`, `QuestionGeneratorAgent`, `LogicBlockEngineAgent`, `TemplateEngineAgent`) is wrapped using `wrap_as_runnable()` and executed via `.invoke()` inside `run_pipeline.py`.
+
+### Why this matters
+- Provides production-grade composability and traceability.
+- Ensures each stage is observable and debuggable.
+- Makes the agent pipeline declarative rather than imperative.
+- Cleanly separates business logic (agents) from control flow (LangChain).
+- Provides a framework-standard execution interface for future extensions.
+
+### Example Runnable
+
+```python
+parse_r = wrap_as_runnable(lambda raw: DataParserAgent().run(raw), name="parse_product")
+product_model = parse_r.invoke(raw_input)
+```
+
+### Why a Custom Template Engine?
+
+LangChain prompt templates are designed for LLM prompting, not deterministic
+structured JSON assembly. The challenge requires reproducible, rule-based
+content generation without LLM involvement. Therefore a custom TemplateEngineAgent
+implements:
+
+- Field sourcing (`product.field`, `blocks.key.items`)
+- Max-length constraints
+- Required-field validation
+- Fallback text
+
 ---
 
 ## 1. Project Structure
@@ -27,7 +59,8 @@ The system is designed according to the requirements of the **Applied AI Enginee
 │   ├── data_parser.py
 │   ├── question_generator.py
 │   ├── logic_engine.py
-│   ├── orchestrator.py
+│   ├── langchain_runnables.py
+│   ├── langchain_adapters.py
 │   ├── template_engine.py
 │   ├── ollama_adapter.py (optional LLM paraphrasing)
 ├── logic_blocks/
@@ -54,6 +87,19 @@ The system is designed according to the requirements of the **Applied AI Enginee
 5. **Optional LLM Adapter** – Paraphrases FAQ answers without adding facts.
 6. Outputs written atomically to `outputs/`.
 
+### LangChain Runnable DAG
+
+```mermaid
+flowchart LR
+    A[Raw Input] --> B((parse_r))
+    B --> C((questions_r))
+    C --> D((logic_r))
+    D --> E((template_r))
+    E --> F[product_page.json]
+    E --> G[faq.json]
+    E --> H[comparison_page.json]
+```
+
 ---
 
 ## 3. Running the Pipeline
@@ -61,7 +107,7 @@ The system is designed according to the requirements of the **Applied AI Enginee
 Activate your environment, then run:
 
 ```bash
-python run_pipeline.py --input inputs/product_input.json
+python run_pipeline.py -i inputs/product_input.json -o outputs/
 ```
 
 Outputs are created in `./outputs/`.

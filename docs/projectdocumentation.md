@@ -13,6 +13,28 @@ This problem emphasizes software architecture, agent boundaries, validation and 
 
 # Solution Overview
 
+## LangChain-Based Orchestration
+
+The final system uses **LangChain Runnables** as the orchestration layer.
+
+Each agent (`DataParserAgent`, `QuestionGeneratorAgent`, `LogicBlockEngineAgent`, `TemplateEngineAgent`) is wrapped using `wrap_as_runnable()` and executed via `.invoke()` inside `run_pipeline.py`.
+
+### Why this matters
+- Provides production-grade composability and traceability.
+- Ensures each stage is observable and debuggable.
+- Makes the agent pipeline declarative rather than imperative.
+- Cleanly separates business logic (agents) from control flow (LangChain).
+- Provides a framework-standard execution interface for future extensions.
+
+### Example Runnable
+
+```python
+parse_r = wrap_as_runnable(lambda raw: DataParserAgent().run(raw), name="parse_product")
+product_model = parse_r.invoke(raw_input)
+```
+
+
+
 The implemented solution is a deterministic, agent-driven pipeline that transforms a canonical `product_input.json` into three deliverables: `product_page.json`, `comparison_page.json`, and `faq.json`. The system is organized around a small set of focused agents and deterministic logic blocks. The core design decisions are:
 
 1. **Clear agent responsibilities**
@@ -25,7 +47,16 @@ The implemented solution is a deterministic, agent-driven pipeline that transfor
 
 2. **Directed acyclic orchestration (DAG)**
 
-   * The OrchestratorAgent runs each stage in a fixed order: parse → question generation → logic engine → templater → write outputs.
+   * Orchestration Layer (LangChain)
+
+   The pipeline is orchestrated entirely using LangChain Runnables.  
+   `run_pipeline.py` constructs a DAG of runnables, each wrapping a deterministic agent:
+
+   1. parse_r
+   2. questions_r
+   3. logic_r
+   4. template_r
+
    * No agent modifies another’s state; all data flows explicitly through return values and function parameters, preserving reproducibility and testability.
 
 3. **Determinism and testability**
@@ -187,7 +218,7 @@ These are intentionally excluded:
 
 # **2. High‑Level Architecture and DAG**
 
-The system is organized as a **Directed Acyclic Graph (DAG)** executed by a single orchestrator component.
+The system is organized as a **Directed Acyclic Graph (DAG)** executed via LangChain Runnables.
 
 ### 2.1 Architectural Overview
 
@@ -225,7 +256,7 @@ Final Output JSON Pages
 
 ### 2.4 Execution Contract
 
-The **OrchestratorAgent** supervises all steps:
+The **Orchestration Layer (LangChain)** supervises all steps:
 
 * Loads input
 * Passes data forward only
@@ -642,7 +673,7 @@ User
  │
  │  run_pipeline.py
  ▼
-OrchestratorAgent
+OrchestrationLayer (LangChain)
  │
  │───▶ DataParserAgent
  │       parse(raw_json)
@@ -722,6 +753,20 @@ QuestionGeneratorAgent
 # **8. Testing Strategy and CI Considerations**
 
 Testing is critical because the system must be deterministic, explainable, and safe. The testing strategy covers units, integration, and validation against hallucination.
+
+The system optionally records intermediate artifacts using a lightweight
+checkpointing utility (`utils/checkpoints.py`):
+
+- after_parse.json
+- after_questions.json
+- after_logic_blocks.json
+
+This supports:
+- Full pipeline auditability,
+- Debugging of logic block outputs,
+- Review-friendly transparency into the DAG execution.
+
+No intermediate file affects determinism.
 
 ---
 
@@ -922,7 +967,7 @@ The LLM adapter is architected as replaceable. To integrate a different model:
   def paraphrase_faq_items(faq_items, product_model):
       return faq_items
   ```
-* Modify Orchestrator to choose the correct adapter based on environment variables.
+* Modify Orchestration Layer to choose the correct adapter based on environment variables.
 
 ### Integration Principles
 
@@ -947,8 +992,27 @@ This pattern enables new teams to add features without modifying core pipeline c
 
 To process multiple product inputs:
 
-* Create a batch orchestrator that iterates through a folder of JSON files.
+* Create batch orchestration functionality that iterates through a folder of JSON files.
 * Enable parallel runs with independent subprocesses while preserving determinism.
+
+---
+
+## **11.7 Robust Block Invocation (Signature-Aware)
+
+LogicBlockEngineAgent uses a tolerant dispatcher, `_call_block_fn`, which:
+
+- Inspects a block’s signature via `inspect.signature`.
+- Supports multiple valid function shapes:
+  - run_block(product)
+  - run_block(product, questions)
+  - run_block(product, questions, blocks)
+- Normalizes product models that may arrive as lists (due to upstream tools).
+- Prevents crashes by catching block-level exceptions and recording them in `blocks[blk]`.
+
+This provides:
+- Safety across changing block signatures,
+- Explicit error propagation,
+- Deterministic fallback paths.
 
 ---
 
@@ -1063,65 +1127,88 @@ This section provides canonical examples of each major data structure in the sys
 
 ---
 
-## **12.6 Complete Execution Flow (Illustrated)**
+## **12.6 Final Output Example (Product Page)**
+
+```json
+{
+  "name": "...",
+  "hero_blurb": "...",
+  "highlights": [...],
+  "benefits": [...],
+  "ingredients": [...],
+  "usage_steps": [...],
+  "metadata": {...},
+  "last_updated": "ISO-8601",
+  "source": "input_product_model"
+}
+```
+
+---
+
+## **12.7 Final Output Example (Comparison Page)**
+
+```json
+{
+  "product_a": {...},
+  "product_b": {...},
+  "comparison": {...},
+  "last_updated": "ISO-8601",
+  "source": "comparison_block"
+}
+
+```
+
+---
+
+## **12.8 Runnable Execution Graph (LangChain)**
+
+```mermaid
+flowchart LR
+    Input --> Parse
+    Parse --> Questions
+    Questions --> Logic
+    Logic --> Templates
+    Templates --> Outputs
+```
+---
+
+## **12.9 Complete Execution Flow (Illustrated)**
 
 Below is a Mermaid flowchart representing the complete execution flow of the Multi‑Agent Content Generation System.
 
 ```mermaid
 flowchart TD
 
-    A[Start: inputs/product_input.json] --> ORCH[OrchestratorAgent]
+  Start[Start] --> Parse[Parse Input JSON]
+  Parse --> Normalize[Normalize keys and map variants]
+  Normalize --> Validate[Validate ProductModel schema]
+  Validate --> CheckValid{ProductModel valid}
+  CheckValid -->|yes| Questions[Generate Questions deterministically]
+  CheckValid -->|no| Fail[Emit validation error and stop]
+  Questions --> LogicEngine[Execute Logic Blocks sequence]
+  subgraph BlocksLoop[Logic Blocks Execution]
+    direction TB
+    BlocksLoopStart[Begin blocks sequence] --> ProductBlock[Run product_block]
+    ProductBlock --> BenefitsBlock[Run benefits_block]
+    BenefitsBlock --> UsageBlock[Run usage_block]
+    UsageBlock --> SafetyBlock[Run safety_block]
+    SafetyBlock --> IngredientsBlock[Run ingredients_block]
+    IngredientsBlock --> CompareBlock[Run compare_block]
+    CompareBlock --> PurchaseBlock[Run purchase_block]
+    PurchaseBlock --> FAQBlock[Run faq_answer_block]
+    FAQBlock --> BlocksLoopEnd[End blocks sequence]
+  end
+  LogicEngine --> BlocksLoop
+  BlocksLoopEnd --> AdapterCheck{LLM adapter configured}
+  AdapterCheck -->|yes| Paraphrase[Paraphrase FAQ items via adapter with strict constraints]
+  AdapterCheck -->|no| SkipParaphrase[Skip paraphrasing]
+  Paraphrase --> MergeBlocks[Merge paraphrased FAQ into blocks]
+  SkipParaphrase --> MergeBlocks
+  MergeBlocks --> TemplateRender[Render Templates deterministically]
+  TemplateRender --> WriteArtifacts[Write product_page json FAQ json comparison json]
+  WriteArtifacts --> Checkpoints[Save intermediate checkpoints for traceability]
+  Checkpoints --> End[End]
 
-    ORCH --> DP[DataParserAgent]
-    DP --> QG[QuestionGeneratorAgent]
-    QG --> LBE[LogicBlockEngineAgent]
-
-    subgraph LOGIC_BLOCKS [Logic Blocks]
-        PB[product_block]
-        BB[benefits_block]
-        UB[usage_block]
-        IB[ingredients_block]
-        SB[safety_block]
-        PB2[purchase_block]
-        CB[compare_block]
-    end
-
-    LBE --> PB
-    LBE --> BB
-    LBE --> UB
-    LBE --> IB
-    LBE --> SB
-    LBE --> PB2
-    LBE --> CB
-
-    PB --> LBE
-    BB --> LBE
-    UB --> LBE
-    IB --> LBE
-    SB --> LBE
-    PB2 --> LBE
-    CB --> LBE
-
-    LBE --> TE[TemplateEngineAgent]
-
-    TE --> PAGE1[product_page.json]
-    TE --> PAGE2[comparison_page.json]
-    TE --> FAQDRAFT[faq draft answers]
-
-    FAQDRAFT --> LLM[LLM Adapter]
-    LLM --> VAL{Validate paraphrase}
-
-    VAL -->|valid| FAQFINAL[final faq items]
-    VAL -->|invalid| FAQORIG[use original draft answers]
-
-    FAQFINAL --> FAQOUT[faq.json]
-    FAQORIG --> FAQOUT
-
-    PAGE1 --> WRITE[Write to outputs directory]
-    PAGE2 --> WRITE
-    FAQOUT --> WRITE
-
-    WRITE --> END[End]
 ```
 
 

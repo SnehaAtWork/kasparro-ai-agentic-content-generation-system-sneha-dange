@@ -15,6 +15,9 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, Any
+from config import USE_OLLAMA
+
+logger = logging.getLogger(__name__)
 
 # langchain runnable adapter (wraps callables into RunnableLambda or shim)
 from agents.langchain_runnables import wrap_as_runnable
@@ -23,6 +26,19 @@ from agents.langchain_runnables import wrap_as_runnable
 from agents.data_parser import DataParserAgent               # :contentReference[oaicite:4]{index=4}
 from agents.question_generator import QuestionGeneratorAgent # :contentReference[oaicite:5]{index=5}
 from agents.logic_engine import LogicBlockEngineAgent        # :contentReference[oaicite:6]{index=6}
+
+if USE_OLLAMA:
+    logger.info("[INFO] USE_OLLAMA=1 → enabling LLM paraphrasing (Ollama)")
+    try:
+        from agents.ollama_adapter import paraphrase_faq_items as ollama_paraphraser
+        logic_agent = LogicBlockEngineAgent(llm_adapter=ollama_paraphraser)
+    except Exception as e:
+        logger.warning(f"[WARN] Failed to load Ollama adapter: {e}")
+        logic_agent = LogicBlockEngineAgent(llm_adapter=None)
+else:
+    logger.info("[INFO] USE_OLLAMA=0 → running deterministic mode only")
+    logic_agent = LogicBlockEngineAgent(llm_adapter=None)
+
 from agents.template_engine import TemplateEngineAgent       # :contentReference[oaicite:7]{index=7}
 
 logger = logging.getLogger("run_pipeline")
@@ -66,7 +82,7 @@ def build_and_run(raw_input: Dict[str, Any], outdir: str) -> Dict[str, str]:
     # Wrap agent run methods as runnables (RunnableLambda when available)
     parse_r = wrap_as_runnable(lambda raw: DataParserAgent().run(raw), name="parse_product")
     qgen_r  = wrap_as_runnable(lambda product: QuestionGeneratorAgent().run(product), name="generate_questions")
-    logic_r = wrap_as_runnable(lambda payload: LogicBlockEngineAgent().run(payload["product_model"], payload.get("questions")), name="run_logic_blocks")
+    logic_r = wrap_as_runnable(lambda payload: logic_agent.run(payload["product_model"], payload.get("questions")), name="run_logic_blocks")
     templ_r = wrap_as_runnable(lambda payload: TemplateEngineAgent().run(payload["product_model"], payload["blocks"], payload.get("questions")), name="render_templates")
 
     # Run sequentially with .invoke() to ensure deterministic shapes and clear traceability.

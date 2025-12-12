@@ -127,8 +127,11 @@ def parse_raw_product(raw: Dict[str, Any]) -> ProductModel:
     # Include price field raw if present - price_inr validator will parse it
     if "price" in raw:
         pm_input["price_inr"] = raw.get("price")
+    elif "Price" in raw:
+        pm_input["price_inr"] = raw.get("Price")
     if "price_inr" in raw:
         pm_input["price_inr"] = raw.get("price_inr")
+
 
     model = ProductModel(**pm_input)
     return model
