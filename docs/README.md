@@ -103,18 +103,18 @@ Supports:
 
 ```mermaid
 flowchart TD
+
     A[Raw Product Input]
-    B[parse_r<br/>(DataParserAgent)]
-    C[questions_r<br/>(QuestionGeneratorAgent)]
-    D[logic_r<br/>(LogicBlockEngineAgent)]
-    E[template_r<br/>(TemplateEngineAgent)]
+    B[parse_r - DataParserAgent]
+    C[questions_r - QuestionGeneratorAgent]
+    D[logic_r - LogicBlockEngineAgent]
+    E[template_r - TemplateEngineAgent]
 
     A --> B --> C --> D --> E
 
     E --> F[product_page.json]
     E --> G[faq.json]
     E --> H[comparison_page.json]
-
 ```
 
 ---
